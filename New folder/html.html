@@ -1,0 +1,264 @@
+<?php
+
+// =========================================
+// YUMMY DONUT
+// PHP WEBSITE
+// =========================================
+
+$donuts = [
+    [
+        "name" => "Strawberry Sprinkle",
+        "image" => "images/donut-1.png",
+        "description" => "Sweet strawberry glaze topped with colorful sprinkles.",
+        "price" => 45
+    ],
+    [
+        "name" => "Choco Hazelnut",
+        "image" => "images/donut-2.png",
+        "description" => "Rich chocolate glaze with crunchy hazelnut topping.",
+        "price" => 50
+    ],
+    [
+        "name" => "Cookies & Cream",
+        "image" => "images/donut-3.png",
+        "description" => "Creamy cookies and cream topped with cookie pieces.",
+        "price" => 50
+    ],
+    [
+        "name" => "Choco Drizzle",
+        "image" => "images/donut-4.png",
+        "description" => "Rich chocolate glaze finished with white chocolate drizzle.",
+        "price" => 45
+    ],
+    [
+        "name" => "Caramel Crunch",
+        "image" => "images/donut-5.png",
+        "description" => "Sweet caramel glaze topped with crunchy caramel pieces.",
+        "price" => 50
+    ],
+    [
+        "name" => "Strawberry Drizzle",
+        "image" => "images/donut-6.png",
+        "description" => "Delicious strawberry glaze finished with sweet white drizzle.",
+        "price" => 45
+    ]
+];
+
+$orderMessage = "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $selectedDonut = $_POST["donut"] ?? "";
+    $quantity = (int)($_POST["quantity"] ?? 1);
+    if ($quantity < 1) {
+        $quantity = 1;
+    }
+
+    foreach ($donuts as $donut) {
+        if ($donut["name"] === $selectedDonut) {
+            $price = $donut["price"];
+            $total = $price * $quantity;
+
+            $sql = "INSERT INTO orders (donut_name, quantity, price, total) VALUES (?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+
+            if ($stmt) {
+                $stmt->bind_param("sidd", $selectedDonut, $quantity, $price, $total);
+                if ($stmt->execute()) {
+                    $orderMessage = "Thank you for your order! " . $quantity . " × " . htmlspecialchars($donut["name"]) . " — Total: ₱" . number_format($total, 2);
+                } else {
+                    $orderMessage = "Sorry, there was a problem saving your order.";
+                }
+                $stmt->close();
+            } else {
+                $orderMessage = "Sorry, there was a problem connecting to the order system.";
+            }
+            break;
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yummy Donut</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo" style="display: flex; align-items: center; gap: 10px;">
+        <img src="images/logo.png" alt="Yummy Donut Logo" style="height: 40px; width: auto; object-fit: contain;">
+        <span>YUMMY DONUT</span>
+    </div>
+    <nav>
+        <ul class="nav-links">
+            <li><a href="#home">HOME</a></li>
+            <li><a href="#menu">MENU</a></li>
+            <li><a href="#about">ABOUT</a></li>
+            <li><a href="#reviews">REVIEWS</a></li>
+            <li><a href="#buy">BUY NOW</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+
+<section id="home" class="hero">
+    <div class="hero-image">
+        <img src="images/hero-donut.png" alt="Yummy Donut">
+        <div class="hero-overlay">
+            <h1>MADE<br>FRESH.<br>MADE<br>WITH<br>LOVE.</h1>
+            <p>Soft, sweet, and made just for you.</p>
+            <p>Every bite is a moment of joy.</p>
+            <a href="#menu" class="btn hero-btn">ORDER NOW</a>
+        </div>
+    </div>
+</section>
+
+<section id="menu" class="featured">
+    <div class="section-heading">
+        <span>MOST LOVED</span>
+        <h2>The Donuts Everyone Loves</h2>
+        <p>Made Fresh,<br>Made with Love</p>
+    </div>
+    <div class="donut-grid">
+        <?php foreach ($donuts as $donut): ?>
+        <article class="donut-card">
+            <div class="donut-image">
+                <img src="<?php echo htmlspecialchars($donut["image"]); ?>" alt="<?php echo htmlspecialchars($donut["name"]); ?>">
+            </div>
+            <h3><?php echo htmlspecialchars($donut["name"]); ?></h3>
+            <p><?php echo htmlspecialchars($donut["description"]); ?></p>
+            <div class="price">₱<?php echo number_format($donut["price"], 2); ?></div>
+            <form method="POST" action="#buy" class="order-form">
+                <input type="hidden" name="donut" value="<?php echo htmlspecialchars($donut["name"]); ?>">
+                <div class="quantity-row">
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" min="1" class="quantity" required>
+                </div>
+                <button type="submit" class="buy-button">BUY NOW</button>
+            </form>
+        </article>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<section id="buy" class="order-result">
+    <div class="order-box">
+        <span>YOUR ORDER</span>
+        <h2>Ready for Something Sweet?</h2>
+        <?php if ($orderMessage !== ""): ?>
+            <div class="success-message"><?php echo $orderMessage; ?></div>
+        <?php else: ?>
+            <p>Choose your favorite donut above and click BUY NOW.</p>
+        <?php endif; ?>
+        <a href="#menu" class="btn">CHOOSE ANOTHER DONUT</a>
+    </div>
+</section>
+
+<section id="about" class="how-we-make">
+    <div class="how-image" style="width: 100%; max-width: 500px; height: 350px; overflow: hidden; border-radius: 12px;">
+        <img src="images/donut-making.png" alt="Making fresh donuts" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+    </div>
+    <div class="how-content">
+        <span>HOW WE MAKE IT</span>
+        <h2>From the First Mix to the Final Sprinkle</h2>
+        <p>From the first mix to the final sprinkle, every Yummy Donut is carefully prepared to give you a soft, fresh, and delicious treat.</p>
+    </div>
+</section>
+
+<section class="why-us">
+    <div class="section-heading">
+        <span>WHY CHOOSE US?</span>
+        <h2>Made with Love,<br>Just for You</h2>
+    </div>
+    <div class="features">
+        <div class="feature">
+            <h3>FRESHLY MADE DAILY</h3>
+            <p>We bake our donuts fresh every day to ensure the best taste.</p>
+        </div>
+        <div class="feature">
+            <h3>PREMIUM INGREDIENTS</h3>
+            <p>Only high quality ingredients for soft, sweet, and delicious donuts.</p>
+        </div>
+        <div class="feature">
+            <h3>MADE WITH LOVE</h3>
+            <p>Every donut is made with care to bring you happiness.</p>
+        </div>
+        <div class="feature">
+            <h3>PERFECT FOR ANY MOMENT</h3>
+            <p>Treat yourself or share the joy with your loved ones.</p>
+        </div>
+    </div>
+</section>
+
+<section id="reviews" class="reviews">
+    <div class="section-heading">
+        <span>HAPPY BITES, HAPPY REVIEWS</span>
+        <h2>Sweet Words from Happy Customers</h2>
+    </div>
+    <div class="review-grid">
+        <article class="review-card">
+            <p>"The donuts are so soft and delicious! You can really taste the quality."</p>
+            <span>- Kate</span>
+        </article>
+        <article class="review-card">
+            <p>"My favorite donut shop! Fresh, tasty, and always satisfying."</p>
+            <span>- Kim</span>
+        </article>
+        <article class="review-card">
+            <p>"Love the variety and the flavors! Definitely coming back for more."</p>
+            <span>- Cleveland</span>
+        </article>
+    </div>
+</section>
+
+<section id="cta" class="cta">
+    <div class="cta-content">
+        <div class="cta-label">SWEET MOMENT FOR EVERYONE</div>
+        <h2 class="cta-title">
+            <span>Treat Yourself.</span>
+            <span>Share the Happiness.</span>
+        </h2>
+        <p>From classic favorites to indulgent creations, there is a donut for every craving and occasion.</p>
+        <a href="#menu" class="btn">EXPLORE MENU</a>
+    </div>
+</section>
+
+</main>
+
+<footer>
+    <div class="footer-logo">YUMMY DONUT</div>
+    <p>Bringing sweetness<br>to your everyday</p>
+    <div class="footer-info">
+        <div>
+            <h3>QUICK LINKS</h3>
+            <a href="#home">Home</a>
+            <a href="#menu">Menu</a>
+            <a href="#about">About Us</a>
+            <a href="#reviews">Reviews</a>
+        </div>
+        <div>
+            <h3>HELP</h3>
+            <a href="#">FAQs</a>
+            <a href="#">Shipping &amp; Delivery</a>
+            <a href="#">Returns</a>
+            <a href="#">Store Locator</a>
+        </div>
+        <div>
+            <h3>CONTACT US</h3>
+            <p>123 Sweet St., Donut City, Philippines</p>
+            <p>+639 940 191 407</p>
+            <p>yummy@donuts.com</p>
+        </div>
+    </div>
+    <div class="copyright">
+        <p>© 2026 Yummy Donut. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
